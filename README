@@ -1,3 +1,9 @@
+###efm
+
+-a file manager that manages absolutely nothing except basic file operations.
+
+###TODO
+
 list directories			DONE
 
 handle terminal size			DONE
