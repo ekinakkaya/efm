@@ -1,21 +1,3 @@
-DONE - get key strokes
-specify some key bindings ex.: ESC for quit, dd for delete etc..
-
-q	quit
-
-dd	delete file
-da	delete all files in directory
-
-rr	rename file
-
-md	move file to given directory
-mm	move file (choose location via ui)
-
-cd	copy file to given directory
-cc	copy file (choose location via ui)
-	
-
-
 list directories			DONE
 
 handle terminal size			DONE
