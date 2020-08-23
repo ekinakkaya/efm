@@ -1,50 +1,57 @@
-#efm
+# efm
 
-a file manager that manages absolutely nothing except basic file operations.
+*THIS PROJECT IS STILL BEING DEVELOPED*
 
-##TODO
+- a file manager that manages absolutely nothing except basic file operations.
+This little project is aimed to be simple and independent. Yet there is so much
+things to change/improve/add.
 
-list directories			DONE
 
-handle terminal size			DONE
+## System:
+- Not tested
 
-!!! DECIDE WHAT THE UI WILL LOOK LIKE	DONE
 
-list files properly			DONE 
+## TODO
 
-make the directories list an ordered list	DONE
+- list directories			DONE
 
-file selection in ui			DONE
+- handle terminal size			DONE
 
-make is_directory function		DONE
-	(this is crucial for navigating
+- !!! DECIDE WHAT THE UI WILL LOOK LIKE	DONE
+
+- list files properly			DONE 
+
+- make the directories list an ordered list	DONE
+
+- file selection in ui			DONE
+
+- make is_directory function		DONE
+	- (this is crucial for navigating
 	up and down in directories and
 	highlighting directories in ui)
 
-highlight directories			DONE
+- highlight directories			DONE
 
-colored filenames			DONE
+- colored filenames			DONE
 
-navigate up and down in directories	DONE
+- navigate up and down in directories	DONE
 
-read and sort the directory ONLY
-when the directory is changed		DONE
+- read and sort the directory ONLY
+  when the directory is changed		DONE
 
-select multiple files			.
+- select multiple files			.
 
-search					.
+- search					.
 
-dynamic array management		.
+- dynamic array management		.
 
-print file sizes			.
+- print file sizes			.
 
-copy and paste files			.
-	https://stackoverflow.com/questions/43265332/copying-files-in-c-program
+- copy and paste files			.
+  - https://stackoverflow.com/questions/43265332/copying-files-in-c-program
 
-cut and paste files			.
+- cut and paste files			.
 
-delete files				.
+- delete files				.
 
-tar support				.
-
-
+- tar support				.
