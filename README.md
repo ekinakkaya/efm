@@ -13,45 +13,44 @@ things to change/improve/add.
 
 ## TODO
 
-- list directories			DONE
+- [DONE] list directories
 
-- handle terminal size			DONE
+- [DONE] handle terminal size
 
-- !!! DECIDE WHAT THE UI WILL LOOK LIKE	DONE
+- [DONE] !!! DECIDE WHAT THE UI WILL LOOK LIKE
 
-- list files properly			DONE 
+- [DONE] list files properly
 
-- make the directories list an ordered list	DONE
+- [DONE] make the directories list an ordered list
 
-- file selection in ui			DONE
+- [DONE] file selection in ui
 
-- make is_directory function		DONE
+- [DONE] make is_directory function
 	- (this is crucial for navigating
 	up and down in directories and
 	highlighting directories in ui)
 
-- highlight directories			DONE
+- [DONE] highlight directories
 
-- colored filenames			DONE
+- [DONE] colored filenames
 
-- navigate up and down in directories	DONE
+- [DONE] navigate up and down in directories
 
-- read and sort the directory ONLY
-  when the directory is changed		DONE
+- [DONE] read and sort the directory ONLY when the directory is changed
 
-- select multiple files			.
+- select multiple files
 
-- search					.
+- search
 
-- dynamic array management		.
+- dynamic array management
 
-- print file sizes			.
+- print file sizes
 
-- copy and paste files			.
+- copy and paste files
   - https://stackoverflow.com/questions/43265332/copying-files-in-c-program
 
-- cut and paste files			.
+- cut and paste files
 
-- delete files				.
+- delete files
 
-- tar support				.
+- tar support
