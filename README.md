@@ -26,9 +26,8 @@ things to change/improve/add.
 - [DONE] file selection in ui
 
 - [DONE] make is_directory function
-	- (this is crucial for navigating
-	up and down in directories and
-	highlighting directories in ui)
+  - (this is crucial for navigating up and down in directories and
+    highlighting directories in ui)
 
 - [DONE] highlight directories
 
