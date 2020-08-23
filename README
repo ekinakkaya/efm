@@ -1,8 +1,8 @@
-###efm
+#efm
 
--a file manager that manages absolutely nothing except basic file operations.
+a file manager that manages absolutely nothing except basic file operations.
 
-###TODO
+##TODO
 
 list directories			DONE
 
