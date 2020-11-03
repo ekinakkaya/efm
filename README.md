@@ -15,7 +15,8 @@ other than my own Manjaro environment.
 ```sh
 git clone https://github.com/ekinakkaya/efm.git
 cd efm
-make install
+make
+sudo make install clean
 ```
 
 ## Usage
