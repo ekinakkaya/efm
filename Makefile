@@ -17,3 +17,5 @@ install:
 clean:
 	rm -rfv *.o
 
+uninstall:
+	rm /usr/local/bin/efm
