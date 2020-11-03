@@ -12,24 +12,24 @@ other than my own Manjaro environment.
 
 ## Installation
 
-'''sh
+```sh
 git clone https://github.com/ekinakkaya/efm.git
 cd efm
 make install
-'''
+```
 
 ## Usage
 
-'''sh
+```sh
 efm
-'''
+```
 
 ## Key Bindings
 
 
 
 ### TODO
-'''
+```
 - [DONE] list directories
 
 - [DONE] handle terminal size
@@ -70,4 +70,4 @@ efm
 - delete files
 
 - tar support
-'''
+```
