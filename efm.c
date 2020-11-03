@@ -27,13 +27,12 @@ unsigned char kb_child_d=0x6C;	// go to child dir	l
 
 int cycle = 0;
 
-void clear_scr();
-void get_scr_siz();
-
+/*
 void get_user();
+*/
 char user_name[4096];
 
-void get_time();
+/* void get_time(); */
 time_t now;
 char current_time[64];
 
@@ -42,10 +41,9 @@ int ROWS, COLS;
 
 int ch;
 
-static char *list_of_directory[32768];
-
 int lod_length = 0;
 
+static char *list_of_directory[32768];
 char current_directory[4096];
 
 unsigned int selected_file;
