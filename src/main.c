@@ -15,7 +15,6 @@
 
 // key bindings - key presses are gonna be notated in hexadecimal
 unsigned char kb_exit=0x71;	// exit			q
-
 unsigned char kb_del=0x50;	// delete		d
 
 unsigned char kb_nextfile=0x6A;	// next file		j
@@ -333,6 +332,10 @@ int main(int argc, char **argv)
 	// Main loop.
 	while (1)
 	{
+		// Disable cursor
+		printf("\e[?25l");
+
+
 		get_scr_siz();
 		get_time();
 
@@ -375,7 +378,12 @@ int main(int argc, char **argv)
 				free(list_of_directory[i]);
 			}
 
+			// Return to the previous screen buffer
 			printf("\033[?1049l");
+
+			// Enable cursor
+			printf("\e[?25h");
+			
 			exit(0);
 		}
 		else if ( ch == kb_prevfile ) {

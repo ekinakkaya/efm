@@ -1,18 +1,35 @@
 # efm
 
-*THIS PROJECT IS STILL BEING DEVELOPED*
+*this project is currently developed*
 
-- a file manager that manages absolutely nothing except basic file operations.
-This little project is aimed to be simple and independent. Yet there is so much
-things to change/improve/add.
+a file manager that is lightweight and reliable. Aimed to be simple, yet functional.
+Written in C and only uses standard UNIX libraries and packages.
+
+## System
+
+Technically every UNIX machine should be able to run efm. Still, it is not tested
+other than my own Manjaro environment. 
+
+## Installation
+
+'''sh
+git clone https://github.com/ekinakkaya/efm.git
+cd efm
+make install
+'''
+
+## Usage
+
+'''sh
+efm
+'''
+
+## Key Bindings
 
 
-## System:
-- Not tested
 
-
-## TODO
-
+### TODO
+'''
 - [DONE] list directories
 
 - [DONE] handle terminal size
@@ -53,3 +70,4 @@ things to change/improve/add.
 - delete files
 
 - tar support
+'''
