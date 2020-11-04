@@ -13,7 +13,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-// key bindings - key presses are gonna be notated in hexadecimal
+/* Key bindings */
 unsigned char kb_exit=0x71;	// exit			q
 unsigned char kb_del=0x50;	// delete		d
 
@@ -25,11 +25,10 @@ unsigned char kb_prevpage=0x4B;	// previous page	K (Shift + k)
 unsigned char kb_parent_d=0x68;	// go to parent dir	h
 unsigned char kb_child_d=0x6C;	// go to child dir	l
 
-int cycle = 0;
 
-/*
-void get_user();
-*/
+/* GLOBAL VARIABLES */
+
+int cycle = 0;
 char user_name[4096];
 
 /* void get_time(); */
@@ -53,35 +52,31 @@ unsigned int pages;
 
 unsigned int directory_changed = 1;
 
+/* Screen size */
 void get_scr_siz() {
 	ioctl(0, TIOCGWINSZ, &w);
 	ROWS = w.ws_row;
 	COLS = w.ws_col;
-	//printf("terminal size: %03i %03i", ROWS, COLS);	
 }
 
 void clear_scr() {
-	printf("\e[1;1H\e[2J");
+	printf("\e[2J\e[1;%sr");
+	//printf("\e[1;1H\e[1;%sr");
+	
 }
 
-// Get username function
 void get_user() {
 	char *p = getenv("USER");
 	if(p==NULL) printf(" wierd");
-	
-	//user_name = p;
-	//printf("user: '%s'",p);
 	strcpy(user_name, p);
 }
 
-// Print time function.
 void get_time() {
 	time(&now);
 	strcpy(current_time, ctime(&now));
-	//printf("%s", ctime(&now));
 }
 
-// Key press detection function
+/* Key press detection function */
 int mygetch ( void ) {
 	int ch;
 	struct termios oldt, newt;
@@ -99,12 +94,12 @@ int mygetch ( void ) {
 
 
 int read_directory(char directory[]) {
-	// clear the existing list_of_directory
-	lod_length = 0;
+	/* clear the existing list_of_directory */
+	
 	for (int k = 0; k < lod_length; k++) {
-		//list_of_directory[k] = "";
 		free(list_of_directory[k]);
 	}
+	lod_length = 0;
 
 	DIR *d;
 	struct dirent *dir;
@@ -113,8 +108,8 @@ int read_directory(char directory[]) {
 	int i = 0;
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
-			//printf("debug: reading.. '%s' \n", dir->d_name);
-			//list_of_directory[i] = dir->d_name;
+			/* printf("debug: reading.. '%s' \n", dir->d_name); */
+			/* list_of_directory[i] = dir->d_name; */
 
 			list_of_directory[i] = malloc(strlen(dir->d_name) + 1);
 			strcpy(list_of_directory[i], dir->d_name);
@@ -127,42 +122,16 @@ int read_directory(char directory[]) {
 	
 }
 
-/*
- * This function is too slow goddamnit. 
-void sort_lod() {
-	char t[4096];
-	for (int s = 0; s < lod_length - 1; s++) {
-		//printf("%i ", s);
-		for (int d = 0; d < lod_length - 1; d++) {
-			//printf("%i ", d);
-			if (strcmp(list_of_directory[d], list_of_directory[d + 1]) > 0) {
-				//printf("d1\n");
-				strcpy(t, list_of_directory[d]);
-				
-				//free(list_of_directory[d]);
-				list_of_directory[d] = realloc(list_of_directory[d], strlen(list_of_directory[d + 1]) + 1);
-				strcpy(list_of_directory[d], list_of_directory[d + 1]);
-				
-				//free(list_of_directory[d + 1]);
-				list_of_directory[d + 1] = realloc(list_of_directory[d], strlen(t) + 1);
-				strcpy(list_of_directory[d + 1], t);
-			}
-		}
-	}
-
-}
-*/
-
-
+/* Used to compare and sort the list of directory */
 int comparefunc (const void* p1, const void* p2) {
 	return strcmp (* (const char **) p1, * (const char **) p2);
 }
 
 
 void pp(char text[4096], int offset) {
-	// short for 'pretty print'.
-	// this function exists to handle the terminal size and to prevent the
-	// screen overflow that happens with smaller terminal sizes
+	/* short for 'pretty print'.
+	 * this function exists to handle the terminal size and to prevent the
+	 * screen overflow that happens with smaller terminal sizes */
 	for (int j = 0; j < COLS + 1 - offset; j++) {
 		if (strlen(text) >= j) {
 			printf("%c", text[j]);
@@ -234,8 +203,9 @@ void get_term_colors() {
 }
 */
 
+/*
 void pp_colored(char buf[4096], int offset, char filename[4096]) {
-	/* directory --> */
+	
 
 	struct stat sb;
 	stat(filename, &sb);
@@ -258,99 +228,90 @@ void pp_colored(char buf[4096], int offset, char filename[4096]) {
 	}
 	
 
-	pp(buf, offset);
+	
+	printf("%s\n", buf);
 
 	printf("\033[0m");
 }
-
-/*
-char *readlink_malloc (const char *filename)
-{
-	printf("debug-- readlink_malloc 1");
-	int size = 128;
-	char *buffer = NULL;
-
-	while (1) {
-		buffer = (char *) realloc (buffer, size);
-		int nchars = readlink (filename, buffer, size);
-		
-		if (nchars < 0) {
-			free (buffer);
-			return NULL;
-		}
-		if (nchars < size)
-			return buffer;
-		size *= 2;
-	}
-	printf("debug--readlink_malloc executed");
-}
 */
 
-/*
-int is_symlink(char filename[4096]) {
+void pp_colored(char filename[4096]) {
+	/* directory --> */
+
 	struct stat sb;
-	char f[4096];
-	
-	strcpy(f, current_directory);
-	if (current_directory != "/") strcat(f, "/");
-	strcat(f, filename);
-	
-	stat(f, &sb);
+	stat(filename, &sb);
 
-	switch (sb.st_mode & S_IFMT) {
-        case S_IFLNK:  return 1; break;		// symlink
-        //default:       return 0; break;		// default
+	
+	if (lstat(filename, &sb) == 0 && sb.st_mode & S_IXUSR) {
+		printf("\033[01;32m");
 	}
-	return 0;
+	
+	switch (sb.st_mode & S_IFMT) {
+	case S_IFDIR:  printf("\033[01;34m");break;		// dir
+        case S_IFBLK:  printf("\033[40;33;01m");break;		// block dev
+        case S_IFCHR:  printf("\033[40;33;01m");break;		// character dev
+        case S_IFIFO:  printf("\033[40;33m");break;		// FIFO/pipe
+        case S_IFLNK:  printf("\033[01;36m");break;		// symlink
+        case S_IFSOCK: printf("\033[01;35m");break;		// socket
+        //case S_IFDIR:  printf("\033[01;34m");break;		// dir
+        //case S_IFREG:  printf("\033[0m");break;		// regular file
+        //default:       printf("\033[0m");break;		// unknown
+	}
 
-
+	printf("%s\033[0m", filename);
 }
-*/
+
 
 int main(int argc, char **argv)
 {
 	//chdir("~/");
 	
-	//Alternate screen buffer.
-	printf("\033[?1049h\033[H");
+	/*
+	Setup the terminal for the TUI.
+	'\e[?1049h': Use alternative screen buffer.
+	'\e[?7l':    Disable line wrapping.
+	'\e[?25l':   Hide the cursor.
+	'\e[2J':     Clear the screen.
+	'\e[1;Nr':   Limit scrolling to scrolling area.
+	             Also sets cursor to (0,0).
+    
+    Reset the terminal to a useable state (undo all changes).
+    '\e[?7h':   Re-enable line wrapping.
+    '\e[?25h':  Unhide the cursor.
+    '\e[2J':    Clear the terminal.
+    '\e[;r':    Set the scroll region to its default value.
+                Also sets cursor to (0,0).
+    '\e[?1049l: Restore main screen buffer.
+	*/
 
-	// user_name variable holds the username
+	/* Alternate screen buffer, disable line wrapping*/
+	printf("\033[?1049h\033[H\e[?7l\e[1;Nr");
+
+
+	/* user_name variable holds the username */
 	get_user();
 
-	// ROWS and COLS variables hold the terminal size
+	/* ROWS and COLS variables hold the terminal size */
 	get_scr_siz();
 
-	// current_time variable holds the time
+	/* current_time variable holds the time */
 	get_time();
-
 
 	get_current_dir();
 
 
-	// Main loop.
 	while (1)
 	{
-		// Disable cursor
+		/* Disable cursor */
 		printf("\e[?25l");
-
 
 		get_scr_siz();
 		get_time();
 
-
-		// navigation in ui
+		/* navigation in ui */
 		max_selection = lod_length - 1;
 
-		
-		// current_directory variable holds the current directory name
-		// list_of_directory variable holds the list of current directory
-		
-		//get_current_dir();
-		//read_directory(current_directory);
-		//read_directory("/usr");
-
-		// listing files in the current directory, handling pages
-
+		/* listing files in the current directory, handling pages */
 		int lod_length_to_print;
 		if (lod_length > ROWS - 4) {
 			lod_length_to_print = ROWS - 4;
@@ -358,8 +319,8 @@ int main(int argc, char **argv)
 			lod_length_to_print = lod_length;
 		}
 
-		// handling pages
-		// current_page, pages
+		/* handling pages
+		 * current_page, pages*/
 		if (lod_length <= lod_length_to_print) {
 			pages = 1;
 		} else {
@@ -367,21 +328,25 @@ int main(int argc, char **argv)
 		}
 		
 	
-		//--- assigning actions to key bindings
+		/* assigning actions to key bindings */
 		
 		if ( ch == kb_exit ) {
-			clear_scr();
+			
 
 			for ( int i = 0; i < lod_length; i++ ) {
 				free(list_of_directory[i]);
 			}
 
-			// Return to the previous screen buffer
+			/* Return to the previous screen buffer*/
 			printf("\033[?1049l");
-
-			// Enable cursor
+			/* Enable cursor */
 			printf("\e[?25h");
+			/* Reenable line wrapping */
+			printf("\e[?7h");
+			/* Set the scroll region to its default value. */
+			printf("\e[;r");
 			
+			clear_scr();
 			exit(0);
 		}
 		else if ( ch == kb_prevfile ) {
@@ -419,7 +384,6 @@ int main(int argc, char **argv)
 			if (is_directory(list_of_directory[selected_file]) == 0) {
 				chdir(list_of_directory[selected_file]);
 				selected_file = 0;
-
 				directory_changed = 1;
 			}
 		}
@@ -428,10 +392,8 @@ int main(int argc, char **argv)
 		// navigation in ui
 		max_selection = lod_length - 1;
 
-		
+		/* check if the directory is changed, and if so, read the current directory. */
 		get_current_dir();
-
-		
 		if (directory_changed == 1) {
 			read_directory(current_directory);
 			//sort_lod();
@@ -440,43 +402,18 @@ int main(int argc, char **argv)
 		
 
 
-		// generating first line to be printed
-		char rows_str[8];
-		char cols_str[8];
-		itoa(ROWS, rows_str, 10);
-		itoa(COLS, cols_str, 10);
-
-		char first_line_buffer[4096];
-		strcpy(first_line_buffer, current_directory);
-		strcat(first_line_buffer, " | ");
-		strcat(first_line_buffer, "terminal size: ");
-		strcat(first_line_buffer, rows_str);
-		strcat(first_line_buffer, " ");
-		strcat(first_line_buffer, cols_str);
-		strcat(first_line_buffer, " | ");
-		strcat(first_line_buffer, user_name);
-
-
-		//printing first line
-		printf("\e[0;30m\e[47m");
-		pp(first_line_buffer, 1);
-		printf("\e[0m");
-		printf("\n");
+		/* PRINT FIRST LINE */
+		printf("\e[0;30m\e[47m%s | terminal size: %3i %3i | %s\e[0m\n", current_directory, ROWS, COLS, user_name);
 	
 
+		/* listing files in the current directory, handling pages */
 
-
-		// listing files in the current directory, handling pages
-
-		//int lod_length_to_print;
 		if (lod_length > ROWS - 4) {
 			lod_length_to_print = ROWS - 4;
 		} else {
 			lod_length_to_print = lod_length;
 		}
 
-		// handling pages
-		// current_page, pages
 		if (lod_length <= lod_length_to_print) {
 			pages = 1;
 		} else {
@@ -484,51 +421,74 @@ int main(int argc, char **argv)
 		}
 	
 
-
+		/* check if the directory is changed, and if so, read the current directory. */
 		get_current_dir();
-
 		if (directory_changed == 1) {
-			
 			read_directory(current_directory);
-			//sort_lod();
 			qsort(list_of_directory, lod_length, sizeof(char **), comparefunc);
-			
-
 			directory_changed = 0;
-			
 		}
 
 		
 		current_page = floor(selected_file / lod_length_to_print) + 1;
 
-		// listing files in directory
-		for (int d = 0 + lod_length_to_print*(current_page - 1); d < lod_length_to_print * current_page; d++) {
-			char b[4096];
-			char space[3] = "  ";
-			char space_selected[3] = "* ";
-			char space_d[3] = "*D";
 
-			if (d < lod_length) {
-				
+		/* listing files in directory
+		 * this is some wide ass spaghetti code, no explanation, just know that it works
+		 * i actually might not need this to overcome line wrapping */
+
+		char space[3] = "  ";
+		char space_selected[3] = "* ";
+		char space_d[3] = "*D";
+
+		int d = 0 + lod_length_to_print*(current_page - 1);
+		int dd = lod_length_to_print * current_page;
+
+		for (d; d < dd; d++) {
+			/* print selector */
+			if (d < lod_length)
+			{
+			if ( d == selected_file )
+			{
+				printf(" * ");
+				pp_colored(list_of_directory[d]);
+				printf("\n");
+			}
+			else
+			{
+				printf("   ");
+				pp_colored(list_of_directory[d]);
+				printf("\n");
+			}
+			}
+			else
+			{
+				printf("\n");
+			}
+			
+
+			/* print list item */
+		}
+		
+		/* for (d; d < dd; d++)
+		{
+			char b[4096];
+			if (d < lod_length)
+			{
 				//check if selected path is a directory
 				char selected_path[4096];
 				strcpy(selected_path, current_directory);
 				strcat(selected_path, "/");
 				strcat(selected_path, list_of_directory[d]);
 
-				if (d == selected_file) {
-					/*
-					if (is_directory(selected_path) == 0) strcat(b, "dir");
-					else strcat(b, "---");
-					*/
+				if (d == selected_file)
+				{
 					strcat(b, space_selected);
 					strcat(b, list_of_directory[d]);
 
-				} else {
-					/*
-					if (is_directory(selected_path) == 0) strcat(b, "dir");
-					else strcat(b, "---");
-					*/
+				}
+				else
+				{
 					strcat(b, space);
 					strcat(b, list_of_directory[d]);
 
@@ -536,26 +496,32 @@ int main(int argc, char **argv)
 				// print the buffer
 				//pp(b, 2);
 				pp_colored(b, 2, list_of_directory[d]);
-			} else {
+			}
+			else
+			{
 				printf("\n");
 			}
 			strcpy(b, "");
 
 		}
-		for (int f = 0; f < ROWS - lod_length_to_print - 4; f++) {
+		for (int f = 0; f < ROWS - lod_length_to_print - 4; f++)
+		{
 			printf("\n");
 		}
+		*/
 		
 		// printing last line
 		printf("character :%X", ch);
 
-		//check if selected path is a directory
+		/* check if selected path is a directory */
+		/*
 		char selected_path[4096];
 		strcpy(selected_path, current_directory);
 		strcat(selected_path, "/");
 		strcat(selected_path, list_of_directory[selected_file]);
 
 		printf(" %i", is_directory(selected_path));
+		*/
 		
 		printf(" | selected file index: %i | %i/%i page(s)", selected_file, current_page, pages);
 		ch = mygetch();
@@ -572,9 +538,10 @@ int main(int argc, char **argv)
 		
 	}
 
-	// end screen buffer
-	printf("\033[?1049l");
+	/* end screen buffer, enable cursor, reenable line wrapping */
+	printf("\033[?1049l\e[?25h\e[?7h");
+	/* Set the scroll region to its default value. */
+	// printf("\e[;r");
  
 	return 0;
 }
-
