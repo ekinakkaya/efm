@@ -3,11 +3,11 @@
 *this project is currently developed*
 
 a file manager that is lightweight and reliable. Aimed to be simple, yet functional.
-Written in C and only uses standard UNIX libraries and packages.
+Written in C and only uses standard Linux libraries and packages.
 
 ## System
 
-Technically every UNIX machine should be able to run efm. Still, it is not tested
+Technically every Linux machine should be able to run efm. Still, it is not tested
 other than my own Manjaro environment. 
 
 ## Installation
