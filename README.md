@@ -1,6 +1,6 @@
 # efm
 
-*this project is currently developed*
+*this project is currently being developed*
 
 a file manager that is lightweight and reliable. Aimed to be simple, yet functional.
 Written in C and only uses standard Linux libraries and packages.
