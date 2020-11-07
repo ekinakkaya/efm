@@ -51,6 +51,7 @@ unsigned int current_page;
 unsigned int pages;
 
 unsigned int directory_changed = 1;
+unsigned int prev_page_number = 1;
 
 /* Screen size */
 void get_scr_siz() {
@@ -60,10 +61,13 @@ void get_scr_siz() {
 }
 
 void clear_scr() {
-	printf("\e[2J\e[1;%sr");
-	//printf("\e[1;1H\e[1;%sr");
-	
+	//printf("\e[1J\e[2J");
+	printf("\e[1;1H");
+	//printf("\e[2J");
+	//printf("\33[2J");
 }
+void line_wrapping_enable () {printf("\e[?7h");}
+void line_wrapping_disable () {printf("\e[?7l");}
 
 void get_user() {
 	char *p = getenv("USER");
@@ -285,7 +289,8 @@ int main(int argc, char **argv)
 	*/
 
 	/* Alternate screen buffer, disable line wrapping*/
-	printf("\033[?1049h\033[H\e[?7l\e[1;Nr");
+	printf("\033[?1049h\033[H");
+	line_wrapping_disable();
 
 
 	/* user_name variable holds the username */
@@ -341,12 +346,15 @@ int main(int argc, char **argv)
 			printf("\033[?1049l");
 			/* Enable cursor */
 			printf("\e[?25h");
+
 			/* Reenable line wrapping */
-			printf("\e[?7h");
+			//printf("\e[?7h");
+			line_wrapping_enable();
+
 			/* Set the scroll region to its default value. */
-			printf("\e[;r");
+			//printf("\e[;r");
 			
-			clear_scr();
+			
 			exit(0);
 		}
 		else if ( ch == kb_prevfile ) {
@@ -398,7 +406,12 @@ int main(int argc, char **argv)
 			read_directory(current_directory);
 			//sort_lod();
 			qsort(list_of_directory, lod_length, sizeof(char **), comparefunc);
+			directory_changed = 0;
+			printf("\e[2J");
 		}
+
+		if ( prev_page_number != current_page ) {printf("\e[1J\e[2J");}
+		
 		
 
 
@@ -427,15 +440,16 @@ int main(int argc, char **argv)
 			read_directory(current_directory);
 			qsort(list_of_directory, lod_length, sizeof(char **), comparefunc);
 			directory_changed = 0;
+			printf("\e[2J");
 		}
+
+		if ( prev_page_number != current_page ) {printf("\e[1J\e[2J");}
 
 		
 		current_page = floor(selected_file / lod_length_to_print) + 1;
 
 
-		/* listing files in directory
-		 * this is some wide ass spaghetti code, no explanation, just know that it works
-		 * i actually might not need this to overcome line wrapping */
+		/* listing files in directory */
 
 		char space[3] = "  ";
 		char space_selected[3] = "* ";
@@ -448,26 +462,23 @@ int main(int argc, char **argv)
 			/* print selector */
 			if (d < lod_length)
 			{
-			if ( d == selected_file )
-			{
-				printf(" * ");
-				pp_colored(list_of_directory[d]);
-				printf("\n");
+				if ( d == selected_file )
+				{
+					printf(" * ");
+					pp_colored(list_of_directory[d]);
+					printf("\n");
+				}
+				else
+				{
+					printf("   ");
+					pp_colored(list_of_directory[d]);
+					printf("\n");
+				}
 			}
 			else
 			{
-				printf("   ");
-				pp_colored(list_of_directory[d]);
 				printf("\n");
 			}
-			}
-			else
-			{
-				printf("\n");
-			}
-			
-
-			/* print list item */
 		}
 		
 		/* for (d; d < dd; d++)
@@ -523,13 +534,22 @@ int main(int argc, char **argv)
 		printf(" %i", is_directory(selected_path));
 		*/
 		
-		printf(" | selected file index: %i | %i/%i page(s)", selected_file, current_page, pages);
+		printf(" | selected file index: %i | %i/%i page(s), prev page: %i", selected_file, current_page, pages, prev_page_number);
+		prev_page_number = current_page;
+
 		ch = mygetch();
+
+		/* Check if the page or the directory is changed. If so,
+		 * hard clear the screen. */
+		//if ( prev_page_number =! current_page || directory_changed == 1){printf("\e[2J");}
+		
 
 
 		// Flush and clear the screen
 		fflush(stdout);
+		//line_wrapping_enable();
 		clear_scr();
+		//line_wrapping_disable();
 
 		// Print program cycle for debug purposes
 		//printf("%i", cycle);
@@ -539,7 +559,7 @@ int main(int argc, char **argv)
 	}
 
 	/* end screen buffer, enable cursor, reenable line wrapping */
-	printf("\033[?1049l\e[?25h\e[?7h");
+	printf("\e[?25h\e[?7h\033[?1049l");
 	/* Set the scroll region to its default value. */
 	// printf("\e[;r");
  
