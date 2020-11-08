@@ -13,7 +13,8 @@
 #include <termios.h>
 #include <unistd.h>
 
-/* Key bindings */
+/* Key bindings
+ * Use hexadecimal values to assign and change key bindings  */
 unsigned char kb_exit=0x71;	// exit			q
 unsigned char kb_del=0x50;	// delete		d
 
@@ -66,6 +67,7 @@ void clear_scr() {
 	//printf("\e[2J");
 	//printf("\33[2J");
 }
+
 void line_wrapping_enable () {printf("\e[?7h");}
 void line_wrapping_disable () {printf("\e[?7l");}
 
@@ -81,18 +83,55 @@ void get_time() {
 }
 
 /* Key press detection function */
-int mygetch ( void ) {
+int mygetch (void) {
 	int ch;
-	struct termios oldt, newt;
+	//struct termios oldt, newt;
 
-	tcgetattr ( STDIN_FILENO, &oldt );
-	newt = oldt;
-	newt.c_lflag &= ~( ICANON | ECHO );
-	tcsetattr ( STDIN_FILENO, TCSANOW, &newt );
+	//tcgetattr ( STDIN_FILENO, &oldt );
+	//newt = oldt;
+	//newt.c_lflag &= ~( ICANON | ECHO );
+
+	//tcsetattr ( STDIN_FILENO, TCSANOW, &newt );
 	ch = getchar();
-	tcsetattr ( STDIN_FILENO, TCSANOW, &oldt );
-
+	//tcsetattr ( STDIN_FILENO, TCSANOW, &oldt );
 	return ch;
+}
+
+
+struct termios oldt, newt;
+
+void set_canonical_mode(int state) {
+
+	switch (state)
+	{
+	case 0: tcsetattr ( STDIN_FILENO, TCSANOW, &oldt ); break; //off
+	case 1:
+		tcgetattr ( STDIN_FILENO, &oldt );
+		newt = oldt;
+		newt.c_lflag &= ~( ICANON | ECHO );
+		tcsetattr ( STDIN_FILENO, TCSANOW, &newt );
+		break;
+	default: break;
+	}
+}
+
+int set_user_echo(int state) {
+	struct termios termInfo, save;
+    int c;
+	c = tcgetattr(0,&termInfo);
+
+	/* error */
+	if (c == -1) 
+	{
+		return -1;
+	}
+
+	switch (state)
+	{
+	case 0: termInfo.c_lflag &= ~ECHO; /* turn off ECHO */ break;
+	case 1: termInfo.c_lflag |= ECHO;  /* turn on ECHO */ break;
+	default: return 0; break;
+	}
 }
 
 
@@ -304,11 +343,15 @@ int main(int argc, char **argv)
 
 	get_current_dir();
 
+	set_user_echo(1);
 
+	set_canonical_mode(1);
+
+	/* Disable cursor */
+	printf("\e[?25l");
 	while (1)
 	{
-		/* Disable cursor */
-		printf("\e[?25l");
+		
 
 		get_scr_siz();
 		get_time();
@@ -347,13 +390,17 @@ int main(int argc, char **argv)
 			/* Enable cursor */
 			printf("\e[?25h");
 
+			set_canonical_mode(0);
+
 			/* Reenable line wrapping */
 			//printf("\e[?7h");
 			line_wrapping_enable();
 
 			/* Set the scroll region to its default value. */
 			//printf("\e[;r");
+
 			
+			set_user_echo(1);
 			
 			exit(0);
 		}
@@ -409,14 +456,10 @@ int main(int argc, char **argv)
 			directory_changed = 0;
 			printf("\e[2J");
 		}
-
-		if ( prev_page_number != current_page ) {printf("\e[1J\e[2J");}
 		
 		
 
 
-		/* PRINT FIRST LINE */
-		printf("\e[0;30m\e[47m%s | terminal size: %3i %3i | %s\e[0m\n", current_directory, ROWS, COLS, user_name);
 	
 
 		/* listing files in the current directory, handling pages */
@@ -443,10 +486,17 @@ int main(int argc, char **argv)
 			printf("\e[2J");
 		}
 
-		if ( prev_page_number != current_page ) {printf("\e[1J\e[2J");}
+		
 
 		
 		current_page = floor(selected_file / lod_length_to_print) + 1;
+
+		/* if the page is changed, hard clear the screen */
+		if ( prev_page_number != current_page ) {printf("\e[1J\e[2J");}
+
+		
+		/* PRINT FIRST LINE */
+		printf("\e[0;30m\e[47m%s | terminal size: %3i %3i | %s\e[0m\n", current_directory, ROWS, COLS, user_name);
 
 
 		/* listing files in directory */
@@ -465,15 +515,13 @@ int main(int argc, char **argv)
 				if ( d == selected_file )
 				{
 					printf(" * ");
-					pp_colored(list_of_directory[d]);
-					printf("\n");
 				}
 				else
 				{
 					printf("   ");
-					pp_colored(list_of_directory[d]);
-					printf("\n");
 				}
+				pp_colored(list_of_directory[d]);
+				printf("\n");
 			}
 			else
 			{
@@ -546,7 +594,7 @@ int main(int argc, char **argv)
 
 
 		// Flush and clear the screen
-		fflush(stdout);
+		//fflush(stdout);
 		//line_wrapping_enable();
 		clear_scr();
 		//line_wrapping_disable();

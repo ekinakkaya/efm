@@ -7,16 +7,14 @@ Written in C and only uses standard Linux libraries and packages.
 
 ## System
 
-Technically every Linux machine should be able to run efm. Still, it is not tested
-other than my own Manjaro environment. 
+Technically every Linux machine should be able to run efm. The ui might be buggy for different terminal applications. It's been tested on my Manjaro environment and Windows Terminal running WSL Ubuntu 20.04. Not tested with ssh.
 
 ## Installation
 
 ```sh
 git clone https://github.com/ekinakkaya/efm.git
 cd efm
-make
-sudo make install clean
+make && sudo make install clean
 ```
 
 ## Usage
