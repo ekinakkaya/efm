@@ -138,7 +138,7 @@ set_canonical_mode(int state)
 		tcgetattr ( STDIN_FILENO, &oldt );
 		newt = oldt;
 		newt.c_lflag &= ~( ICANON | ECHO );
-		newt.c_cc[VTIME] = 0;
+		//newt.c_cc[VTIME] = 0.01;
 		tcsetattr ( STDIN_FILENO, TCSANOW, &newt );
 		break;
 	default: break;
@@ -305,7 +305,7 @@ pp_colored(char filename[4096])
 	}
 	
 	switch (sb.st_mode & S_IFMT) {
-	case S_IFDIR:  printf("\033[01;34m");break;		// dir
+		case S_IFDIR:  printf("\033[01;34m");break;		// dir
         case S_IFBLK:  printf("\033[40;33;01m");break;		// block dev
         case S_IFCHR:  printf("\033[40;33;01m");break;		// character dev
         case S_IFIFO:  printf("\033[40;33m");break;		// FIFO/pipe
@@ -328,6 +328,12 @@ main(int argc, char **argv)
 	printf("\033[?1049h\033[H");
 	line_wrapping_disable();
 
+	/* set canonical mode and user echo */
+	set_user_echo(1);
+	set_canonical_mode(1);
+	/* Disable cursor */
+	printf("\e[?25l");
+
 	/* user_name variable holds the username */
 	get_user();
 
@@ -338,12 +344,6 @@ main(int argc, char **argv)
 	get_time();
 
 	get_current_dir();
-
-	/* set canonical mode and user echo */
-	set_user_echo(1);
-	set_canonical_mode(1);
-	/* Disable cursor */
-	printf("\e[?25l");
 
 
 	while (1) {
@@ -388,13 +388,8 @@ main(int argc, char **argv)
 			set_canonical_mode(0);
 
 			/* Reenable line wrapping */
-			//printf("\e[?7h");
 			line_wrapping_enable();
 
-			/* Set the scroll region to its default value. */
-			//printf("\e[;r");
-
-			
 			set_user_echo(1);
 			
 			exit(0);
@@ -451,6 +446,7 @@ main(int argc, char **argv)
 			directory_changed = 0;
 			printf("\e[2J");
 		}
+		
 	
 
 		/* listing files in the current directory, handling pages */
@@ -507,8 +503,8 @@ main(int argc, char **argv)
 		int d = 0 + lod_length_to_print*(current_page - 1);
 		int dd = lod_length_to_print * current_page;
 
+		
 		for (d; d < dd; d++) {
-			/* print selector */
 			if (d < lod_length)
 			{
 				if ( d == selected_file )
@@ -519,7 +515,8 @@ main(int argc, char **argv)
 				{
 					printf("   ");
 				}
-				pp_colored(list_of_directory[d]);
+				//pp_colored(list_of_directory[d]);
+				printf("%s", list_of_directory[d]);
 				printf("\n");
 			}
 			else
@@ -529,6 +526,7 @@ main(int argc, char **argv)
 		}
 		
 		
+		
 		// printing last line
 		printf("character :%X", ch);
 
@@ -536,23 +534,17 @@ main(int argc, char **argv)
 		printf(" | selected file index: %i | %i/%i page(s)", selected_file, current_page, pages);
 		prev_page_number = current_page;
 
-		ch = mygetch();
-
-		/* Check if the page or the directory is changed. If so,
-		 * hard clear the screen. */
-		//if ( prev_page_number =! current_page || directory_changed == 1){printf("\e[2J");}
-		
+		//ch = mygetch();
+		ch = getchar();
 
 
 		// Flush and clear the screen
 		fflush(stdout);
-		//line_wrapping_enable();
 		clear_scr();
-		//line_wrapping_disable();
 
 		// Print program cycle for debug purposes
 		//printf("%i", cycle);
-		cycle++;
+		//cycle++;
 
 		
 	}
