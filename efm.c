@@ -341,6 +341,7 @@ pp_colored(char filename[4096])
 	/* directory --> */
 
 	struct stat sb;
+	//stat(filename, &sb);
 
 	
 	if (lstat(filename, &sb) == 0 && sb.st_mode & S_IXUSR) {
@@ -403,15 +404,17 @@ main(int argc, char **argv)
 
 		/* handling pages
 		 * current_page, pages*/
-		/*
 		if (lod_length <= lod_length_to_print) {
 			pages = 1;
 		} else {
 			pages = floor(lod_length / lod_length_to_print) + 1;
 		}
-		*/
+		
 		/* if-less implementation of the code above */
-		pages = (lod_length <= lod_length_to_print) + (lod_length > lod_length_to_print) * (floor(lod_length / lod_length_to_print) + 1);
+		/* gives a floating point exception.. couldn't figure out why. i couldn't avoid using if
+		pages = 1 * (lod_length <= lod_length_to_print) + 
+		        (lod_length > lod_length_to_print && lod_length_to_print != 0) * (floor(lod_length / lod_length_to_print) + 1) +
+				(lod_length > lod_length_to_print && lod_length_to_print == 0) * 1;*/
 
 		
 	
@@ -504,32 +507,23 @@ main(int argc, char **argv)
 
 		/* handling pages
 		 * current_page, pages*/
-		pages = (lod_length <= lod_length_to_print) + (lod_length > lod_length_to_print) * (floor(lod_length / lod_length_to_print) + 1);
-
-
-
-		/* check if the directory is changed, and if so, read the current directory. again. */
-		get_current_dir();
-		if (directory_changed == 1) {
-			read_directory(current_directory);
-			qsort(list_of_directory, lod_length, sizeof(char **), comparefunc); /* quick sort the list */
-			directory_changed = 0;
-			printf("\e[2J"); /* clear the screen */
+		if (lod_length <= lod_length_to_print) {
+			pages = 1;
+		} else {
+			pages = floor(lod_length / lod_length_to_print) + 1;
 		}
+		/*pages = 1 * (lod_length <= lod_length_to_print) + (lod_length > lod_length_to_print) * (floor(lod_length / lod_length_to_print) + 1); */
 
 		
+
 		current_page = floor(selected_file / lod_length_to_print) + 1;
 
-		/* if the page is changed, hard clear the screen */
-		if (prev_page_number != current_page) {
+		/* if the page is changed OR the size of the terminal window changed, hard clear the screen */
+		if ((prev_page_number != current_page) || (ROWS_PREV != ROWS || COLS_PREV != COLS)) {
 			printf("\e[1J\e[2J");
 		}
 
-		if (ROWS_PREV != ROWS || COLS_PREV != COLS) {
-			printf("\e[1J\e[2J");
-		}
-
-		/* update ROWS_PREV and COLS_PREV */
+		/* update the previous size values of the terminal. which is ROWS_PREV and COLS_PREV */
 		ROWS_PREV = ROWS;
 		COLS_PREV = COLS;
 
@@ -573,8 +567,27 @@ main(int argc, char **argv)
 		}
 		
 		
-		// TODO: print what is the current operation, print instruction
-		// EX: copying /file/path/ex to ? | select directory or press v and type destination path
+		/* listing files in the current directory, handling pages */
+		lod_length_to_print = (ROWS - 4) * (lod_length > ROWS - 4) + lod_length * (lod_length <= ROWS - 4);
+
+		/* handling pages
+		 * current_page, pages*/
+		pages = 1 * (lod_length <= lod_length_to_print) + (lod_length > lod_length_to_print) * (floor(lod_length / lod_length_to_print) + 1);
+
+
+
+		/* check if the directory is changed, and if so, read the current directory. again. */
+		get_current_dir();
+		if (directory_changed == 1) {
+			read_directory(current_directory);
+			qsort(list_of_directory, lod_length, sizeof(char **), comparefunc); /* quick sort the list */
+			directory_changed = 0;
+			printf("\e[2J"); /* clear the screen */
+		}
+
+		
+		/* TODO: print what is the current operation, print instruction
+		 * EX: copying /file/path/ex to ? | select directory or press v and type destination path */
 
 
 		
@@ -586,6 +599,7 @@ main(int argc, char **argv)
 		prev_page_number = current_page;
 
 		//ch = mygetch();
+		/* wait for user input and get the presseed key */
 		ch = getchar();
 
 
