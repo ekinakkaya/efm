@@ -27,6 +27,10 @@ unsigned char kb_prevpage=0x4B;	// previous page	K (Shift + k)
 unsigned char kb_parent_d=0x68;	// go to parent dir	h
 unsigned char kb_child_d=0x6C;	// go to child dir	l
 
+unsigned char kb_file_yank=0x79; // yank file       y
+unsigned char kb_file_cut=0x63; // cut file         c
+unsigned char kb_file_paste=0x70; // paste file     p
+
 
 /* GLOBAL VARIABLES */
 
@@ -166,10 +170,36 @@ set_user_echo(int state)
 	}
 }
 
+/*
+const char
+*file_color(char filename[])
+{
+	struct stat sb;
+	stat(filename, &sb);
 
+	
+	if (lstat(filename, &sb) == 0 && sb.st_mode & S_IXUSR) {
+		//return "\033[01;32m";
+	}
+	
+	lstat(filename, &sb);
+	
+	switch (sb.st_mode & S_IFMT) {
+		case S_IFDIR:  return "\033[01;34m"; break;	// dir
+        case S_IFBLK:  return "\033[40;33;01m";	break;	// block dev
+        case S_IFCHR:  return "\033[40;33;01m";	break;	// character dev
+        case S_IFIFO:  return "\033[40;33m"; break;	// FIFO/pipe
+        case S_IFLNK:  return "\033[01;36m"; break;	// symlink
+        case S_IFSOCK: return "\033[01;35m"; break;	// socket
+        //case S_IFDIR:  printf("\033[01;34m");break;		// dir
+        //case S_IFREG:  printf("\033[0m");break;		// regular file
+        //default:       printf("\033[0m");break;		// unknown
+	}
+}
+*/
 
 int
-read_directory(char directory[])
+read_directory(char *directory)
 {
 	/* clear the existing list_of_directory */
 	
@@ -185,8 +215,14 @@ read_directory(char directory[])
 	int i = 0;
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
+			//list_of_directory[i] = malloc(strlen(dir->d_name) + strlen(file_color(dir->d_name)) + 1);
 			list_of_directory[i] = malloc(strlen(dir->d_name) + 1);
+
+			//strcpy(list_of_directory[i], file_color(dir->d_name));
+			//strcat(list_of_directory[i], dir->d_name);
 			strcpy(list_of_directory[i], dir->d_name);
+
+			//strcpy(list_of_directory_colors[i], file_color(dir->d_name));
 
 			i++;
 			lod_length++;
@@ -195,6 +231,14 @@ read_directory(char directory[])
 	}
 	
 }
+
+/*
+int
+yank_from_to(char from[], char to[])
+{
+
+}
+*/
 
 /* Used to compare and sort the list of directory */
 int
@@ -297,7 +341,6 @@ pp_colored(char filename[4096])
 	/* directory --> */
 
 	struct stat sb;
-	stat(filename, &sb);
 
 	
 	if (lstat(filename, &sb) == 0 && sb.st_mode & S_IXUSR) {
@@ -323,25 +366,15 @@ pp_colored(char filename[4096])
 int
 main(int argc, char **argv)
 {
-
-	/* Alternate screen buffer, disable line wrapping*/
-	printf("\033[?1049h\033[H");
+	printf("\033[?1049h\033[H"); /* Alternate screen buffer, disable line wrapping*/
 	line_wrapping_disable();
-
-	/* set canonical mode and user echo */
-	set_user_echo(1);
+	set_user_echo(1); /* set canonical mode and user echo */
 	set_canonical_mode(1);
-	/* Disable cursor */
-	printf("\e[?25l");
+	printf("\e[?25l"); /* Disable cursor */
 
-	/* user_name variable holds the username */
-	get_user();
-
-	/* ROWS and COLS variables hold the terminal size */
-	get_scr_siz();
-
-	/* current_time variable holds the time */
-	get_time();
+	get_user(); /* user_name variable holds the username */
+	get_scr_siz(); /* ROWS and COLS variables hold the terminal size */
+	get_time();/* current_time variable holds the time */
 
 	get_current_dir();
 
@@ -353,28 +386,38 @@ main(int argc, char **argv)
 		/* navigation in ui */
 		max_selection = lod_length - 1;
 
+
 		/* listing files in the current directory, handling pages */
+		int lod_length_to_print;
+		/*
 		int lod_length_to_print;
 		if (lod_length > ROWS - 4) {
 			lod_length_to_print = ROWS - 4;
 		} else {
 			lod_length_to_print = lod_length;
 		}
+		*/
+		/* if-less implementation of the code above */
+		lod_length_to_print = (ROWS - 4) * (lod_length > ROWS - 4) + lod_length * (lod_length <= ROWS - 4);
+
 
 		/* handling pages
 		 * current_page, pages*/
+		/*
 		if (lod_length <= lod_length_to_print) {
 			pages = 1;
 		} else {
 			pages = floor(lod_length / lod_length_to_print) + 1;
 		}
+		*/
+		/* if-less implementation of the code above */
+		pages = (lod_length <= lod_length_to_print) + (lod_length > lod_length_to_print) * (floor(lod_length / lod_length_to_print) + 1);
+
 		
 	
 		/* assigning actions to key bindings */
 		
 		if ( ch == kb_exit ) {
-			
-
 			for ( int i = 0; i < lod_length; i++ ) {
 				free(list_of_directory[i]);
 			}
@@ -432,6 +475,15 @@ main(int argc, char **argv)
 				directory_changed = 1;
 			}
 		}
+		else if (ch == kb_file_yank) {
+			// yank
+		}
+		else if (ch == kb_file_cut) {
+			// cut
+		}
+		else if (ch == kb_file_paste) {
+			// paste
+		}
 
 	
 		// navigation in ui
@@ -441,36 +493,28 @@ main(int argc, char **argv)
 		get_current_dir();
 		if (directory_changed == 1) {
 			read_directory(current_directory);
-			//sort_lod();
-			qsort(list_of_directory, lod_length, sizeof(char **), comparefunc);
+			qsort(list_of_directory, lod_length, sizeof(char **), comparefunc); /* quick sort the list */
 			directory_changed = 0;
-			printf("\e[2J");
+			printf("\e[2J"); /* clear the screen */
 		}
 		
 	
-
 		/* listing files in the current directory, handling pages */
+		lod_length_to_print = (ROWS - 4) * (lod_length > ROWS - 4) + lod_length * (lod_length <= ROWS - 4);
 
-		if (lod_length > ROWS - 4) {
-			lod_length_to_print = ROWS - 4;
-		} else {
-			lod_length_to_print = lod_length;
-		}
+		/* handling pages
+		 * current_page, pages*/
+		pages = (lod_length <= lod_length_to_print) + (lod_length > lod_length_to_print) * (floor(lod_length / lod_length_to_print) + 1);
 
-		if (lod_length <= lod_length_to_print) {
-			pages = 1;
-		} else {
-			pages = floor(lod_length / lod_length_to_print) + 1;
-		}
-	
 
-		/* check if the directory is changed, and if so, read the current directory. */
+
+		/* check if the directory is changed, and if so, read the current directory. again. */
 		get_current_dir();
 		if (directory_changed == 1) {
 			read_directory(current_directory);
-			qsort(list_of_directory, lod_length, sizeof(char **), comparefunc);
+			qsort(list_of_directory, lod_length, sizeof(char **), comparefunc); /* quick sort the list */
 			directory_changed = 0;
-			printf("\e[2J");
+			printf("\e[2J"); /* clear the screen */
 		}
 
 		
@@ -507,16 +551,15 @@ main(int argc, char **argv)
 		for (d; d < dd; d++) {
 			if (d < lod_length)
 			{
-				if ( d == selected_file )
-				{
+				if ( d == selected_file ) {
 					printf(" * ");
-				}
-				else
-				{
+				} else {
 					printf("   ");
 				}
-				//pp_colored(list_of_directory[d]);
-				printf("%s", list_of_directory[d]);
+
+				pp_colored(list_of_directory[d]);
+				//printf("%s", list_of_directory[d]);
+				//printf("\033[0m");
 				printf("\n");
 			}
 			else
@@ -524,8 +567,16 @@ main(int argc, char **argv)
 				printf("\n");
 			}
 		}
+		for (int f = 0; f < ROWS - lod_length_to_print - 3; f++)
+		{
+			printf("\n");
+		}
 		
 		
+		// TODO: print what is the current operation, print instruction
+		// EX: copying /file/path/ex to ? | select directory or press v and type destination path
+
+
 		
 		// printing last line
 		printf("character :%X", ch);
