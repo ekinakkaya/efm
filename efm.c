@@ -16,20 +16,29 @@
 
 /* Key bindings
  * Use hexadecimal values to assign and change key bindings  */
-unsigned char kb_exit=0x71;	// exit			q
-unsigned char kb_del=0x50;	// delete		d
+unsigned char kb_exit=0x71;	// exit	                q
+unsigned char kb_del=0x50;	// delete               d
 
-unsigned char kb_nextfile=0x6A;	// next file		j
-unsigned char kb_prevfile=0x6B;	// previous file	k
-unsigned char kb_nextpage=0x4A;	// next page		J (Shift + j)
-unsigned char kb_prevpage=0x4B;	// previous page	K (Shift + k)
+unsigned char kb_nextfile=0x6A;	// next file        j
+unsigned char kb_prevfile=0x6B;	// previous file    k
+unsigned char kb_nextpage=0x4A;	// next page        J (Shift + j)
+unsigned char kb_prevpage=0x4B;	// previous page    K (Shift + k)
 
-unsigned char kb_parent_d=0x68;	// go to parent dir	h
-unsigned char kb_child_d=0x6C;	// go to child dir	l
+unsigned char kb_parent_d=0x68;	// go to parent dir h
+unsigned char kb_child_d=0x6C;	// go to child dir  l
 
+//unsigned char kb_go_to_d=0x67;	// go to typed dir  g
+//unsigned char kb_go_to_d=0x3A;	// type command     :
+
+unsigned char kb_create_dir=0x43; // create dir     C (Shift + c)
 unsigned char kb_file_yank=0x79; // yank file       y
 unsigned char kb_file_cut=0x63; // cut file         c
 unsigned char kb_file_paste=0x70; // paste file     p
+//unsigned char kb_rename=0x72; // rename         r
+
+
+
+
 
 
 /* GLOBAL VARIABLES */
@@ -45,7 +54,7 @@ struct winsize w;
 int ROWS, COLS;
 int ROWS_PREV, COLS_PREV;
 
-int ch;
+char ch;
 
 int lod_length = 0;
 
@@ -270,8 +279,6 @@ get_current_dir()
 {
 	char buff_dir_name[4096];
 	getcwd(buff_dir_name, 4096);
-
-	//current_directory = buff_dir_name;
 	strcpy(current_directory, buff_dir_name);
 }
 
@@ -363,13 +370,46 @@ pp_colored(char filename[4096])
 	printf("%s\033[0m", filename);
 }
 
+int
+create_dir(char *dirname)
+{
+	int check = mkdir(dirname, 0777);
+	if (!check) {
+		return 0;
+	} else {
+		return -1;
+	}
+	
+}
+
+
+int
+get_string(char **string_addr) {
+	int bytes_read;
+	int size = 10;
+
+	char *string;
+	string = (char *) malloc (size);
+	bytes_read = getdelim(&string, &size, '\n', stdin);
+
+	for (int i = 0; i < bytes_read; i++) {
+		if (string[i] == '\n') string[i] = '\0';
+	}
+
+	if (bytes_read == -1) {
+		return -1; // error
+	} else {
+		*string_addr = string;
+		return 0;
+	}
+}
 
 int
 main(int argc, char **argv)
 {
 	printf("\033[?1049h\033[H"); /* Alternate screen buffer, disable line wrapping*/
 	line_wrapping_disable();
-	set_user_echo(1); /* set canonical mode and user echo */
+	set_user_echo(0); /* set canonical mode and user echo */
 	set_canonical_mode(1);
 	printf("\e[?25l"); /* Disable cursor */
 
@@ -380,6 +420,7 @@ main(int argc, char **argv)
 	get_current_dir();
 
 
+			int pressed_c = 0;
 	while (1) {
 		get_scr_siz();
 		get_time();
@@ -419,7 +460,6 @@ main(int argc, char **argv)
 		
 	
 		/* assigning actions to key bindings */
-		
 		if ( ch == kb_exit ) {
 			for ( int i = 0; i < lod_length; i++ ) {
 				free(list_of_directory[i]);
@@ -458,7 +498,6 @@ main(int argc, char **argv)
 			if (selected_file + lod_length_to_print > max_selection) selected_file = max_selection;
 			else selected_file = selected_file + lod_length_to_print;
 		}
-		
 		else if ( ch == kb_parent_d ) {
 			if (current_directory != "/") {
 				
@@ -478,14 +517,49 @@ main(int argc, char **argv)
 				directory_changed = 1;
 			}
 		}
-		else if (ch == kb_file_yank) {
+		else if ( ch == kb_file_yank ) {
 			// yank
+			printf("yank");
 		}
-		else if (ch == kb_file_cut) {
+		else if ( ch == kb_file_cut ) {
 			// cut
+			printf("");
 		}
-		else if (ch == kb_file_paste) {
+		else if ( ch == kb_file_paste ) {
 			// paste
+			printf("");
+		}
+		else if ( ch == kb_create_dir ) {
+			pressed_c = 1;
+
+			char *dirname;
+
+			newt.c_lflag |= ( ICANON | ECHO );
+			tcsetattr ( STDIN_FILENO, TCSANOW, &newt );
+
+			printf("\e[2J");
+			//printf("\e[%i;1f", ROWS);
+			printf("create directory | type and press ENTER. leave blank to abort.\n");
+			get_string(&dirname);
+			//int nb = strlen(dirname) - 1;
+			//printf("\033[K");
+			printf("\e[%i;1f", ROWS);
+			//printf("|%i ,|", dirname[strlen(dirname) - 1]);
+
+			newt.c_lflag &= ~( ICANON | ECHO );
+			tcsetattr ( STDIN_FILENO, TCSANOW, &newt );
+			clear_scr();
+
+			if (create_dir(dirname) < 0) {
+				// error
+			} else {
+				// directory isn't actually changed, but the content did. So this is good enough, aight?..
+				directory_changed = 1; 
+			}
+			
+			
+
+			//TODO: use get_string() and try to get a string.
 		}
 
 	
@@ -595,11 +669,11 @@ main(int argc, char **argv)
 		printf("character :%X", ch);
 
 		
-		printf(" | selected file index: %i | %i/%i page(s)", selected_file, current_page, pages);
+		printf(" | selected file index: %i | %i/%i page(s), %i    ", selected_file, current_page, pages, pressed_c);
 		prev_page_number = current_page;
 
 		//ch = mygetch();
-		/* wait for user input and get the presseed key */
+		/* wait for user input and get the pressed key */
 		ch = getchar();
 
 
@@ -610,8 +684,6 @@ main(int argc, char **argv)
 		// Print program cycle for debug purposes
 		//printf("%i", cycle);
 		//cycle++;
-
-		
 	}
 
 	/* end screen buffer, enable cursor, reenable line wrapping */
