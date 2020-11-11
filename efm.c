@@ -340,6 +340,16 @@ get_term_colors()
 	
 }
 */
+int
+check_file_exists(const char *filename)
+{
+    struct stat buffer;
+    int exist = stat(filename, &buffer);
+    if (exist == 0)
+        return 0;
+    else
+        return -1; // error
+}
 
 
 void
@@ -386,7 +396,7 @@ create_dir(char *dirname)
 int
 get_string(char **string_addr) {
 	int bytes_read;
-	int size = 10;
+	size_t size = 10;
 
 	char *string;
 	string = (char *) malloc (size);
@@ -420,7 +430,6 @@ main(int argc, char **argv)
 	get_current_dir();
 
 
-			int pressed_c = 0;
 	while (1) {
 		get_scr_siz();
 		get_time();
@@ -465,17 +474,10 @@ main(int argc, char **argv)
 				free(list_of_directory[i]);
 			}
 
-			/* Return to the previous screen buffer*/
-			printf("\033[?1049l");
-
-			/* Enable cursor */
-			printf("\e[?25h");
-
+			printf("\033[?1049l"); // Return to the previous screen buffer
+			printf("\e[?25h"); // Enable cursor
 			set_canonical_mode(0);
-
-			/* Reenable line wrapping */
-			line_wrapping_enable();
-
+			line_wrapping_enable(); // Reenable line wrapping
 			set_user_echo(1);
 			
 			exit(0);
@@ -515,6 +517,12 @@ main(int argc, char **argv)
 				chdir(list_of_directory[selected_file]);
 				selected_file = 0;
 				directory_changed = 1;
+			} else if (check_file_exists(list_of_directory[selected_file]) < 0) {
+				directory_changed = 1; //if file can't be read, it's probably deleted or modified. refresh.
+
+				// prevents a bug. selected_file can't be larger than max_selection.
+				if(selected_file >= max_selection) selected_file = max_selection;
+				selected_file--; // decrement by one, just in case...
 			}
 		}
 		else if ( ch == kb_file_yank ) {
@@ -523,29 +531,31 @@ main(int argc, char **argv)
 		}
 		else if ( ch == kb_file_cut ) {
 			// cut
-			printf("");
+			//printf("");
 		}
 		else if ( ch == kb_file_paste ) {
 			// paste
-			printf("");
+			//printf("");
 		}
 		else if ( ch == kb_create_dir ) {
-			pressed_c = 1;
 
 			char *dirname;
 
 			newt.c_lflag |= ( ICANON | ECHO );
 			tcsetattr ( STDIN_FILENO, TCSANOW, &newt );
+			printf("\e[?25h");
+
 
 			printf("\e[2J");
 			//printf("\e[%i;1f", ROWS);
-			printf("create directory | type and press ENTER. leave blank to abort.\n");
+			printf("\e[0;30m\e[47mcreate directory | type and press ENTER. leave blank to abort.\e[0m\n: ");
 			get_string(&dirname);
 			//int nb = strlen(dirname) - 1;
 			//printf("\033[K");
 			printf("\e[%i;1f", ROWS);
 			//printf("|%i ,|", dirname[strlen(dirname) - 1]);
 
+			printf("\e[?25l");
 			newt.c_lflag &= ~( ICANON | ECHO );
 			tcsetattr ( STDIN_FILENO, TCSANOW, &newt );
 			clear_scr();
@@ -559,7 +569,7 @@ main(int argc, char **argv)
 			
 			
 
-			//TODO: use get_string() and try to get a string.
+			//TODO: make a function that handles getting lines. another goddamn function.
 		}
 
 	
@@ -604,7 +614,6 @@ main(int argc, char **argv)
 		
 		/* PRINT FIRST LINE */
 		printf("\e[0;30m\e[47m%s | terminal size: %3i %3i | %s\e[0m\n", current_directory, ROWS, COLS, user_name);
-
 
 		/* listing files in directory */
 
@@ -669,7 +678,7 @@ main(int argc, char **argv)
 		printf("character :%X", ch);
 
 		
-		printf(" | selected file index: %i | %i/%i page(s), %i    ", selected_file, current_page, pages, pressed_c);
+		printf(" | selected file index: %i | %i/%i page(s)    ", selected_file, current_page, pages);
 		prev_page_number = current_page;
 
 		//ch = mygetch();
