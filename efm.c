@@ -39,8 +39,6 @@ unsigned char kb_file_paste=0x70; // paste file     p
 
 
 
-
-
 /* GLOBAL VARIABLES */
 
 unsigned int cycle = 0;
@@ -82,11 +80,7 @@ get_scr_siz()
 void
 clear_scr()
 {
-	//printf("\e[1J\e[2J");
-	//printf("\e[2J");
-	//printf("\e[1;1H");
 	printf("\e[1;1H");
-	//printf("\33[2J");
 }
 
 
@@ -118,24 +112,6 @@ get_time()
 {
 	time(&now);
 	strcpy(current_time, ctime(&now));
-}
-
-
-/* Key press detection function */
-int
-mygetch(void)
-{
-	int ch;
-	//struct termios oldt, newt;
-
-	//tcgetattr ( STDIN_FILENO, &oldt );
-	//newt = oldt;
-	//newt.c_lflag &= ~( ICANON | ECHO );
-
-	//tcsetattr ( STDIN_FILENO, TCSANOW, &newt );
-	ch = getchar();
-	//tcsetattr ( STDIN_FILENO, TCSANOW, &oldt );
-	return ch;
 }
 
 
@@ -173,39 +149,12 @@ set_user_echo(int state)
 
 	switch (state)
 	{
-	case 0: termInfo.c_lflag &= ~ECHO; /* turn off ECHO */ break;
-	case 1: termInfo.c_lflag |= ECHO;  /* turn on ECHO */ break;
-	default: return 0; break;
+		case 0: termInfo.c_lflag &= ~ECHO; /* turn off ECHO */ break;
+		case 1: termInfo.c_lflag |= ECHO;  /* turn on ECHO */ break;
+		default: return 0; break;
 	}
 }
 
-/*
-const char
-*file_color(char filename[])
-{
-	struct stat sb;
-	stat(filename, &sb);
-
-	
-	if (lstat(filename, &sb) == 0 && sb.st_mode & S_IXUSR) {
-		//return "\033[01;32m";
-	}
-	
-	lstat(filename, &sb);
-	
-	switch (sb.st_mode & S_IFMT) {
-		case S_IFDIR:  return "\033[01;34m"; break;	// dir
-        case S_IFBLK:  return "\033[40;33;01m";	break;	// block dev
-        case S_IFCHR:  return "\033[40;33;01m";	break;	// character dev
-        case S_IFIFO:  return "\033[40;33m"; break;	// FIFO/pipe
-        case S_IFLNK:  return "\033[01;36m"; break;	// symlink
-        case S_IFSOCK: return "\033[01;35m"; break;	// socket
-        //case S_IFDIR:  printf("\033[01;34m");break;		// dir
-        //case S_IFREG:  printf("\033[0m");break;		// regular file
-        //default:       printf("\033[0m");break;		// unknown
-	}
-}
-*/
 
 int
 read_directory(char *directory)
@@ -224,14 +173,8 @@ read_directory(char *directory)
 	int i = 0;
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
-			//list_of_directory[i] = malloc(strlen(dir->d_name) + strlen(file_color(dir->d_name)) + 1);
 			list_of_directory[i] = malloc(strlen(dir->d_name) + 1);
-
-			//strcpy(list_of_directory[i], file_color(dir->d_name));
-			//strcat(list_of_directory[i], dir->d_name);
 			strcpy(list_of_directory[i], dir->d_name);
-
-			//strcpy(list_of_directory_colors[i], file_color(dir->d_name));
 
 			i++;
 			lod_length++;
@@ -257,12 +200,10 @@ comparefunc(const void* p1, const void* p2)
 }
 
 
+/*
 void
 pp(char text[4096], int offset)
 {
-	/* short for 'pretty print'.
-	 * this function exists to handle the terminal size and to prevent the
-	 * screen overflow that happens with smaller terminal sizes */
 	for (int j = 0; j < COLS + 1 - offset; j++) {
 		if (strlen(text) >= j) {
 			printf("%c", text[j]);
@@ -271,7 +212,7 @@ pp(char text[4096], int offset)
 		}
 	}
 	printf("\n");
-}
+}*/
 
 
 void
@@ -358,7 +299,6 @@ pp_colored(char filename[4096])
 	/* directory --> */
 
 	struct stat sb;
-	//stat(filename, &sb);
 
 	
 	if (lstat(filename, &sb) == 0 && sb.st_mode & S_IXUSR) {
@@ -414,6 +354,49 @@ get_string(char **string_addr) {
 	}
 }
 
+
+
+int
+get_string_input(int mode, char *content, char **string_addr)
+{
+	char *input_str;
+
+	newt.c_lflag |= ( ICANON | ECHO ); // change the mode of canonical mode
+	                                   // and user echo to off
+	tcsetattr ( STDIN_FILENO, TCSANOW, &newt ); // apply changes
+	printf("\e[?25h"); // enable cursor
+
+	switch (mode) {
+		// clear screen and get a string
+		case 0:
+			printf("\e[2J%s", content);
+
+			get_string(&input_str);
+			*string_addr = input_str;
+
+			break;
+
+		// get a string from the first line
+		case 1: 
+			printf("\e[1;1f\033[K%s", content); // move the cursor to (1, 1), clear line
+
+			get_string(&input_str);
+			*string_addr = input_str;
+
+			printf("\e[2J\e[1;1f"); // clear screen, move the cursor to (1, 1)
+
+			break;
+	}
+	printf("\e[?25l"); // disable cursor
+	newt.c_lflag &= ~( ICANON | ECHO ); // change the mode of canonical mode
+	                                   // and user echo to on
+
+	tcsetattr( STDIN_FILENO, TCSANOW, &newt );// apply changes
+	clear_scr();
+}
+
+
+
 int
 main(int argc, char **argv)
 {
@@ -440,15 +423,6 @@ main(int argc, char **argv)
 
 		/* listing files in the current directory, handling pages */
 		int lod_length_to_print;
-		/*
-		int lod_length_to_print;
-		if (lod_length > ROWS - 4) {
-			lod_length_to_print = ROWS - 4;
-		} else {
-			lod_length_to_print = lod_length;
-		}
-		*/
-		/* if-less implementation of the code above */
 		lod_length_to_print = (ROWS - 4) * (lod_length > ROWS - 4) + lod_length * (lod_length <= ROWS - 4);
 
 
@@ -459,12 +433,6 @@ main(int argc, char **argv)
 		} else {
 			pages = floor(lod_length / lod_length_to_print) + 1;
 		}
-		
-		/* if-less implementation of the code above */
-		/* gives a floating point exception.. couldn't figure out why. i couldn't avoid using if
-		pages = 1 * (lod_length <= lod_length_to_print) + 
-		        (lod_length > lod_length_to_print && lod_length_to_print != 0) * (floor(lod_length / lod_length_to_print) + 1) +
-				(lod_length > lod_length_to_print && lod_length_to_print == 0) * 1;*/
 
 		
 	
@@ -540,24 +508,7 @@ main(int argc, char **argv)
 		else if ( ch == kb_create_dir ) {
 
 			char *dirname;
-
-			newt.c_lflag |= ( ICANON | ECHO );
-			tcsetattr ( STDIN_FILENO, TCSANOW, &newt );
-			printf("\e[?25h");
-
-
-			printf("\e[2J");
-			//printf("\e[%i;1f", ROWS);
-			printf("\e[0;30m\e[47mcreate directory | type and press ENTER. leave blank to abort.\e[0m\n: ");
-			get_string(&dirname);
-			//int nb = strlen(dirname) - 1;
-			//printf("\033[K");
-			printf("\e[%i;1f", ROWS);
-			//printf("|%i ,|", dirname[strlen(dirname) - 1]);
-
-			printf("\e[?25l");
-			newt.c_lflag &= ~( ICANON | ECHO );
-			tcsetattr ( STDIN_FILENO, TCSANOW, &newt );
+			get_string_input(1, "hello: ", &dirname);
 			clear_scr();
 
 			if (create_dir(dirname) < 0) {
@@ -566,10 +517,6 @@ main(int argc, char **argv)
 				// directory isn't actually changed, but the content did. So this is good enough, aight?..
 				directory_changed = 1; 
 			}
-			
-			
-
-			//TODO: make a function that handles getting lines. another goddamn function.
 		}
 
 	
@@ -596,8 +543,6 @@ main(int argc, char **argv)
 		} else {
 			pages = floor(lod_length / lod_length_to_print) + 1;
 		}
-		/*pages = 1 * (lod_length <= lod_length_to_print) + (lod_length > lod_length_to_print) * (floor(lod_length / lod_length_to_print) + 1); */
-
 		
 
 		current_page = floor(selected_file / lod_length_to_print) + 1;
@@ -624,6 +569,9 @@ main(int argc, char **argv)
 		int d = 0 + lod_length_to_print*(current_page - 1);
 		int dd = lod_length_to_print * current_page;
 
+		// TODO: add a loop that gets the colors that will be 
+		//       in the page. add to a list once. get the colors
+		//       again only if the page or the directory is changed
 		
 		for (d; d < dd; d++) {
 			if (d < lod_length)
