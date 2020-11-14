@@ -58,6 +58,7 @@ int lod_length = 0;
 
 static char *list_of_directory[32768];
 char current_directory[4096];
+char parent_directory[4096];
 
 unsigned int selected_file;
 unsigned int max_selection;
@@ -435,7 +436,9 @@ main(int argc, char **argv)
 		}
 
 		
-	
+		strcpy(parent_directory, current_directory);
+		strcat(parent_directory, "/..");
+
 		/* assigning actions to key bindings */
 		if ( ch == kb_exit ) {
 			for ( int i = 0; i < lod_length; i++ ) {
@@ -470,12 +473,19 @@ main(int argc, char **argv)
 		}
 		else if ( ch == kb_parent_d ) {
 			if (current_directory != "/") {
+				while (is_directory(parent_directory) < 0) {
+					strcat(parent_directory, "/..");
+				}
 				
-				chdir("..");
+				chdir(parent_directory);
 				selected_file = 0;
 
 				directory_changed = 1;
 			} else {
+				// go to parent directory, if valid: cd, else: go to parent directory again (make this a loop)
+				// same thing must be done in the else if block below
+				// else if ( ch == kb_child_d )
+
 				chdir(".");
 			}
 		}
@@ -532,6 +542,7 @@ main(int argc, char **argv)
 			printf("\e[2J"); /* clear the screen */
 		}
 		
+		
 	
 		/* listing files in the current directory, handling pages */
 		lod_length_to_print = (ROWS - 4) * (lod_length > ROWS - 4) + lod_length * (lod_length <= ROWS - 4);
@@ -572,7 +583,7 @@ main(int argc, char **argv)
 		// TODO: add a loop that gets the colors that will be 
 		//       in the page. add to a list once. get the colors
 		//       again only if the page or the directory is changed
-		
+
 		for (d; d < dd; d++) {
 			if (d < lod_length)
 			{
@@ -626,7 +637,7 @@ main(int argc, char **argv)
 		printf("character :%X", ch);
 
 		
-		printf(" | selected file index: %i | %i/%i page(s)    ", selected_file, current_page, pages);
+		printf(" | selected file index: %i | %i/%i page(s)    \n\033[K%s", selected_file, current_page, pages, parent_directory);
 		prev_page_number = current_page;
 
 		//ch = mygetch();
