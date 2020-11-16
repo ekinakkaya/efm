@@ -39,7 +39,7 @@ efm
 
 - search
 
-- dynamic array management
+- [DONE]dynamic array management
 
 - rename files
 

@@ -13,6 +13,8 @@
 #include <termios.h>
 #include <unistd.h>
 
+#define LOD_INIT_SIZE 256
+
 
 /* Key bindings
  * Use hexadecimal values to assign and change key bindings  */
@@ -55,10 +57,14 @@ int ROWS_PREV, COLS_PREV;
 char ch;
 
 int lod_length = 0;
+unsigned int LOD_SIZE = LOD_INIT_SIZE;
+static char **list_of_directory;
 
-static char *list_of_directory[32768];
 char current_directory[4096];
 char parent_directory[4096];
+
+
+unsigned int lod_length_to_print;
 
 unsigned int selected_file;
 unsigned int max_selection;
@@ -162,10 +168,12 @@ read_directory(char *directory)
 {
 	/* clear the existing list_of_directory */
 	
+	//for (int k = 0; k < lod_length; k++) {
 	for (int k = 0; k < lod_length; k++) {
 		free(list_of_directory[k]);
 	}
 	lod_length = 0;
+	LOD_SIZE = LOD_INIT_SIZE;
 
 	DIR *d;
 	struct dirent *dir;
@@ -174,6 +182,11 @@ read_directory(char *directory)
 	int i = 0;
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
+			if (lod_length > LOD_SIZE) {
+				LOD_SIZE *= 2;
+				list_of_directory = realloc(list_of_directory, LOD_SIZE * sizeof(char*));
+			}
+
 			list_of_directory[i] = malloc(strlen(dir->d_name) + 1);
 			strcpy(list_of_directory[i], dir->d_name);
 
@@ -397,6 +410,23 @@ get_string_input(int mode, char *content, char **string_addr)
 }
 
 
+void
+handle_ui_dirlist()
+{
+		/* listing files in the current directory, handling pages */
+
+		lod_length_to_print = (ROWS - 4) * (lod_length > ROWS - 4) + lod_length * (lod_length <= ROWS - 4);
+
+
+		/* handling pages
+		 * current_page, pages*/
+		if (lod_length <= lod_length_to_print) {
+			pages = 1;
+		} else {
+			pages = floor(lod_length / lod_length_to_print) + 1;
+		}
+}
+
 
 int
 main(int argc, char **argv)
@@ -413,6 +443,8 @@ main(int argc, char **argv)
 
 	get_current_dir();
 
+	
+	list_of_directory = malloc(LOD_INIT_SIZE * sizeof(char*));
 
 	while (1) {
 		get_scr_siz();
@@ -420,20 +452,7 @@ main(int argc, char **argv)
 
 		/* navigation in ui */
 		max_selection = lod_length - 1;
-
-
-		/* listing files in the current directory, handling pages */
-		int lod_length_to_print;
-		lod_length_to_print = (ROWS - 4) * (lod_length > ROWS - 4) + lod_length * (lod_length <= ROWS - 4);
-
-
-		/* handling pages
-		 * current_page, pages*/
-		if (lod_length <= lod_length_to_print) {
-			pages = 1;
-		} else {
-			pages = floor(lod_length / lod_length_to_print) + 1;
-		}
+		handle_ui_dirlist();
 
 		
 		strcpy(parent_directory, current_directory);
@@ -518,7 +537,7 @@ main(int argc, char **argv)
 		else if ( ch == kb_create_dir ) {
 
 			char *dirname;
-			get_string_input(1, "hello: ", &dirname);
+			get_string_input(1, "type directory name: ", &dirname);
 			clear_scr();
 
 			if (create_dir(dirname) < 0) {
@@ -530,8 +549,7 @@ main(int argc, char **argv)
 		}
 
 	
-		// navigation in ui
-		max_selection = lod_length - 1;
+
 
 		/* check if the directory is changed, and if so, read the current directory. */
 		get_current_dir();
@@ -543,19 +561,10 @@ main(int argc, char **argv)
 		}
 		
 		
-	
-		/* listing files in the current directory, handling pages */
-		lod_length_to_print = (ROWS - 4) * (lod_length > ROWS - 4) + lod_length * (lod_length <= ROWS - 4);
-
-		/* handling pages
-		 * current_page, pages*/
-		if (lod_length <= lod_length_to_print) {
-			pages = 1;
-		} else {
-			pages = floor(lod_length / lod_length_to_print) + 1;
-		}
+		// navigation in ui
+		max_selection = lod_length - 1;
+		handle_ui_dirlist();
 		
-
 		current_page = floor(selected_file / lod_length_to_print) + 1;
 
 		/* if the page is changed OR the size of the terminal window changed, hard clear the screen */
@@ -609,14 +618,18 @@ main(int argc, char **argv)
 		}
 		
 		
-		/* listing files in the current directory, handling pages */
-		lod_length_to_print = (ROWS - 4) * (lod_length > ROWS - 4) + lod_length * (lod_length <= ROWS - 4);
-
-		/* handling pages
-		 * current_page, pages*/
-		pages = 1 * (lod_length <= lod_length_to_print) + (lod_length > lod_length_to_print) * (floor(lod_length / lod_length_to_print) + 1);
+		handle_ui_dirlist();
 
 
+
+		// printing last line
+		printf("character :%X | selected file index: %i | %i/%i page(s)    \n\033[K%i"
+		        , ch, selected_file, current_page, pages, LOD_SIZE);
+
+		/* TODO: print what is the current operation, print instruction
+		 * EX: copying /file/path/ex to ? | select directory or press v and type destination path */
+		
+		prev_page_number = current_page;
 
 		/* check if the directory is changed, and if so, read the current directory. again. */
 		get_current_dir();
@@ -628,17 +641,6 @@ main(int argc, char **argv)
 		}
 
 		
-		/* TODO: print what is the current operation, print instruction
-		 * EX: copying /file/path/ex to ? | select directory or press v and type destination path */
-
-
-		
-		// printing last line
-		printf("character :%X", ch);
-
-		
-		printf(" | selected file index: %i | %i/%i page(s)    \n\033[K%s", selected_file, current_page, pages, parent_directory);
-		prev_page_number = current_page;
 
 		//ch = mygetch();
 		/* wait for user input and get the pressed key */
@@ -648,10 +650,6 @@ main(int argc, char **argv)
 		// Flush and clear the screen
 		fflush(stdout);
 		clear_scr();
-
-		// Print program cycle for debug purposes
-		//printf("%i", cycle);
-		//cycle++;
 	}
 
 	/* end screen buffer, enable cursor, reenable line wrapping */
