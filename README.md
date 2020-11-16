@@ -29,50 +29,50 @@ efm
 
 ### TODO
 ```
-- [DONE] create directory
+- [*] create directory
 
-- copy and paste files
+- [ ] copy and paste files
   - https://stackoverflow.com/questions/43265332/copying-files-in-c-program
   - https://forgetcode.com/c/577-copy-one-file-to-another-file
 
-- select multiple files
+- [ ] select multiple files
 
-- search
+- [ ] search
 
-- [DONE]dynamic array management
+- [*] dynamic array management
 
-- rename files
+- [*] rename files
 
-- cut and paste files
+- [ ] cut and paste files
 
-- delete files
+- [ ] delete files
 
-- tar support
+- [ ] tar support
 
-- Use LS_COLORS
+- [ ] Use LS_COLORS
 
-- print file sizes
+- [ ] print file sizes
 
-- [DONE] list directories
+- [*] list directories
 
-- [DONE] handle terminal size
+- [*] handle terminal size
 
-- [DONE] list files properly
+- [*] list files properly
 
-- [DONE] make the directories list an ordered list
+- [*] make the directories list an ordered list
 
-- [DONE] file selection in ui
+- [*] file selection in ui
 
-- [DONE] make is_directory function
+- [*] make is_directory function
   - (this is crucial for navigating up and down in directories and
     highlighting directories in ui)
 
-- [DONE] highlight directories
+- [*] highlight directories
 
-- [DONE] colored filenames
+- [*] colored filenames
 
-- [DONE] navigate up and down in directories
+- [*] navigate up and down in directories
 
-- [DONE] read and sort the directory ONLY when the directory is changed
+- [*] read and sort the directory ONLY when the directory is changed
 
 ```

@@ -36,7 +36,7 @@ unsigned char kb_create_dir=0x43; // create dir     C (Shift + c)
 unsigned char kb_file_yank=0x79; // yank file       y
 unsigned char kb_file_cut=0x63; // cut file         c
 unsigned char kb_file_paste=0x70; // paste file     p
-//unsigned char kb_rename=0x72; // rename         r
+unsigned char kb_rename=0x72; // rename         r
 
 
 
@@ -537,7 +537,7 @@ main(int argc, char **argv)
 		else if ( ch == kb_create_dir ) {
 
 			char *dirname;
-			get_string_input(1, "type directory name: ", &dirname);
+			get_string_input(1, "\e[0;30m\e[47mType directory name:\e[0m ", &dirname);
 			clear_scr();
 
 			if (create_dir(dirname) < 0) {
@@ -547,6 +547,18 @@ main(int argc, char **argv)
 				directory_changed = 1; 
 			}
 		}
+		else if ( ch == kb_rename ) {
+			char *new_filename;
+			get_string_input(1, "\e[0;30m\e[47mRename:\e[0m ", &new_filename);
+			//rename(list_of_directory[selected_file], new_filename);
+			if (rename(list_of_directory[selected_file], new_filename) < 0) {
+				// error
+			} else {
+				// directory isn't actually changed, but the content did. So this is good enough, aight?..
+				directory_changed = 1; 
+			}
+		}
+
 
 	
 
@@ -628,6 +640,7 @@ main(int argc, char **argv)
 
 		/* TODO: print what is the current operation, print instruction
 		 * EX: copying /file/path/ex to ? | select directory or press v and type destination path */
+		//printf("%s", );
 		
 		prev_page_number = current_page;
 
