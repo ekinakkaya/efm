@@ -13,8 +13,23 @@
 #include <termios.h>
 #include <unistd.h>
 
+// SET BOTH TO ZERO TO DISABLE COLOR
+#define USE_LS_COLORS 1 // set to zero for no ls colors
+#define USE_MANUAL_COLORS 0 // set to zero for no manual colors
+#define MANUAL_LS_COLORS "rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:"
+
 #define LOD_INIT_SIZE 256
 
+
+/*
+struct efmdiritem
+{
+	char *i_name;
+	char *i_type;
+	char *i_ext;
+	size_t *i_size;
+};
+*/
 
 /* Key bindings
  * Use hexadecimal values to assign and change key bindings  */
@@ -74,6 +89,9 @@ unsigned int pages;
 unsigned int directory_changed = 1;
 unsigned int prev_page_number = 1;
 
+
+unsigned int LS_COLORS_SIZE;
+static char LS_COLORS[1024][16];
 
 void
 get_scr_siz()
@@ -285,16 +303,6 @@ is_directory(char name[4096])
 }
 
 
-/*
-void
-get_term_colors()
-{
-	char *t = getenv("LS_COLORS");
-	//if(t==NULL) printf(" wierd");
-	
-	
-}
-*/
 int
 check_file_exists(const char *filename)
 {
@@ -307,31 +315,141 @@ check_file_exists(const char *filename)
 }
 
 
+int
+get_ls_colors()
+{
+	char ls[4096];
+	if (USE_MANUAL_COLORS == 0) strcpy(ls, getenv("LS_COLORS"));
+
+	if (ls == NULL || USE_MANUAL_COLORS == 1) {
+		strcpy(ls, MANUAL_LS_COLORS);
+	}
+
+	int i = 0;
+	int ii = 0;
+	int index = 0;
+	while (ls[i] != '\0') {
+		if (ls[i] != ':') {
+			LS_COLORS[index][ii] = ls[i];
+		} else {
+			LS_COLORS[index][ii+1] = '\0';
+			index++;
+			ii = -1;
+		}
+		i++;
+		ii++;
+	}
+
+	LS_COLORS_SIZE = index;
+	return 0;
+}
+
+
+const char *get_filename_ext(const char *filename) {
+    const char *dot = strrchr(filename, '.');
+    if(!dot || dot == filename) return "";
+    return dot;
+}
+
+
 void
+print_ls_color(char *filename)
+{
+	char t[1024];
+	char ext_t[1024];
+	char *ext; // ex.: "*.out" OR "di", "pi" etc..
+	char col_t[1024];
+	char *col; // ex.: 01;35
+	
+	for (int i = 0; i < LS_COLORS_SIZE; i++) {
+		strcpy(ext_t, LS_COLORS[i]);
+		strcpy(t, LS_COLORS[i]);
+		strcpy(col_t, LS_COLORS[i]);
+		
+		// if filename is actually a filename, 
+		ext = strtok(t, ".");
+		if (strcmp(ext, ext_t) != 0) {
+			ext = strtok(ext_t, "*");
+			ext = strtok(ext, "=");
+		} else {
+			ext = strtok(ext_t, "=");
+		}
+		col = strrchr(col_t, '=');
+		col = strtok(col, "=");
+		if (strcmp(filename, ext) == 0 || strcmp(get_filename_ext(filename), ext) == 0) {
+			//printf("\e[%sm|%s, %s|%s, %s|", col, ext_t, LS_COLORS[i], ext, col);
+			printf("\e[%sm", col);
+			break;
+		}
+	}
+}
+
+int
 pp_colored(char filename[4096])
 {
-	/* directory --> */
-
+	int flag = 0;
 	struct stat sb;
 
+	lstat(filename, &sb);
 	
-	if (lstat(filename, &sb) == 0 && sb.st_mode & S_IXUSR) {
-		printf("\033[01;32m");
-	}
+	//if (sb.st_mode & S_ISUID) { printf("\033[01;32m"); }
+	if (sb.st_mode & S_ISUID) { print_ls_color("su"); }
+	//if (sb.st_mode & S_ISGID) { printf("\033[01;32m"); }
+	else if (sb.st_mode & S_ISGID) { print_ls_color("sg"); }
 	
-	switch (sb.st_mode & S_IFMT) {
-		case S_IFDIR:  printf("\033[01;34m");break;		// dir
-        case S_IFBLK:  printf("\033[40;33;01m");break;		// block dev
-        case S_IFCHR:  printf("\033[40;33;01m");break;		// character dev
-        case S_IFIFO:  printf("\033[40;33m");break;		// FIFO/pipe
-        case S_IFLNK:  printf("\033[01;36m");break;		// symlink
-        case S_IFSOCK: printf("\033[01;35m");break;		// socket
-        //case S_IFDIR:  printf("\033[01;34m");break;		// dir
-        //case S_IFREG:  printf("\033[0m");break;		// regular file
-        //default:       printf("\033[0m");break;		// unknown
-	}
 
-	printf("%s\033[0m", filename);
+	// dir that is sticky and other writable (+t, o+w)
+	if (sb.st_mode & S_IFDIR && sb.st_mode & S_ISVTX && sb.st_mode & S_IWOTH) { print_ls_color("tw"); flag = 1;}
+	// dir that is other writable and not sticky (o+w)
+	else if (sb.st_mode & S_IFDIR && sb.st_mode & S_IWOTH) { print_ls_color("ow"); flag = 1;}
+	// dir that is sticky but not other writable (+t)
+	else if (sb.st_mode & S_IFDIR && sb.st_mode & S_ISVTX && sb.st_mode & S_IWOTH) { print_ls_color("st"); flag = 1;}
+	else {
+		switch (sb.st_mode & S_IFMT) {
+			//case S_IFDIR:  printf("\033[01;34m"); flag = 1; break;      // dir
+			case S_IFDIR:  print_ls_color("di"); flag = 1; break;       // dir
+    	    //case S_IFBLK:  printf("\033[40;33;01m"); flag = 1; break;   // block dev
+    	    case S_IFBLK:  print_ls_color("bd"); flag = 1; break;       // block dev
+    	    //case S_IFCHR:  printf("\033[40;33;01m"); flag = 1; break;   // character dev
+    	    case S_IFCHR:  print_ls_color("cd"); flag = 1; break;   // character dev
+    	    //case S_IFIFO:  printf("\033[40;33m"); flag = 1; break;      // FIFO/pipe
+    	    case S_IFIFO:  print_ls_color("pi"); flag = 1; break;      // FIFO/pipe
+    	    //case S_IFLNK:  printf("\033[01;36m"); flag = 1; break;      // symlink
+    	    case S_IFLNK:  print_ls_color("ln"); flag = 1; break;      // symlink
+    	    //case S_IFSOCK: printf("\033[01;35m"); flag = 1; break;      // socket
+    	    case S_IFSOCK: print_ls_color("so"); flag = 1; break;      // socket
+		}
+	}
+		//if (sb.st_mode & S_IXUSR) { printf("\033[01;32m"); }
+	if (sb.st_mode & S_IXUSR && flag == 0) { print_ls_color("ex"); }
+
+	if (flag == 0 && !(sb.st_mode & S_IFDIR)) {
+		/*
+		char ext_t[1024];
+		char *ext; // ex.: *.out
+		char col_t[1024];
+		char *col; // ex.: 01;35
+		
+		for (int i = 0; i < LS_COLORS_SIZE; i++) {
+			strcpy(ext_t, LS_COLORS[i]);
+			strcpy(col_t, LS_COLORS[i]);
+
+			ext = strtok(ext_t, "*");
+			ext = strtok(ext, "=");
+
+			col = strrchr(col_t, '=');
+			col = strtok(col, "=");
+
+			if (strcmp(get_filename_ext(filename), ext) == 0) {
+				//printf("\e[%sm|%s, %s|%s, %s|", col, ext_t, LS_COLORS[i], ext, col);
+				printf("\e[%sm", col);
+				break;
+			}
+		}
+		*/
+		print_ls_color(filename);
+	}
+	printf("%s\e[0m", filename);
 }
 
 int
@@ -440,6 +558,8 @@ main(int argc, char **argv)
 	get_user(); /* user_name variable holds the username */
 	get_scr_siz(); /* ROWS and COLS variables hold the terminal size */
 	get_time();/* current_time variable holds the time */
+
+	if (USE_LS_COLORS == 1 || USE_MANUAL_COLORS == 1) get_ls_colors();
 
 	get_current_dir();
 
@@ -609,13 +729,13 @@ main(int argc, char **argv)
 			if (d < lod_length)
 			{
 				if ( d == selected_file ) {
-					printf(" * ");
+					printf("[ ] * ");
 				} else {
-					printf("   ");
+					printf("[ ]   ");
 				}
 
-				pp_colored(list_of_directory[d]);
-				//printf("%s", list_of_directory[d]);
+				if (USE_LS_COLORS == 1 || USE_MANUAL_COLORS == 1) pp_colored(list_of_directory[d]);
+				else printf("%s", list_of_directory[d]);
 				//printf("\033[0m");
 				printf("\n");
 			}
@@ -635,8 +755,8 @@ main(int argc, char **argv)
 
 
 		// printing last line
-		printf("character :%X | selected file index: %i | %i/%i page(s)    \n\033[K%i"
-		        , ch, selected_file, current_page, pages, LOD_SIZE);
+		printf(" %s | character :%X | selected file index: %i | %i/%i page(s)    \n\033[K%i"
+		        , LS_COLORS[100], ch, selected_file, current_page, pages, LOD_SIZE);
 
 		/* TODO: print what is the current operation, print instruction
 		 * EX: copying /file/path/ex to ? | select directory or press v and type destination path */
