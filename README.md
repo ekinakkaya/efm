@@ -49,7 +49,7 @@ efm
 
 - [ ] tar support
 
-- [ ] Use LS_COLORS
+- [*] Use LS_COLORS
 
 - [ ] print file sizes
 
