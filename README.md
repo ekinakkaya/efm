@@ -1,5 +1,11 @@
-# efm
+           __           
+          / _|          
+      ___| |_ _ __ ___  
+     / _ \  _| '_ ` _ \ 
+    |  __/ | | | | | | |
+     \___|_| |_| |_| |_|
 
+# efm
 *this project is currently being developed*
 
 a file manager that is lightweight and reliable. Aimed to be simple, yet functional.
@@ -31,7 +37,7 @@ efm
 ```
 - [*] create directory
 
-- [ ] copy and paste files
+- [*] copy and paste files
   - https://stackoverflow.com/questions/43265332/copying-files-in-c-program
   - https://forgetcode.com/c/577-copy-one-file-to-another-file
 
